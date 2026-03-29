@@ -77,20 +77,6 @@ select:focus {
   padding: 24px 16px 120px;
 }
 
-.hero {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  margin-bottom: 18px;
-  padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 28px;
-  background: rgba(255, 250, 244, 0.88);
-  backdrop-filter: blur(16px);
-  box-shadow: var(--shadow);
-}
-
-.hero-top,
 .section-head,
 .group-head,
 .grand-total,
@@ -105,7 +91,6 @@ select:focus {
   align-items: center;
 }
 
-.eyebrow,
 .status-chip,
 .total-pill {
   display: inline-flex;
@@ -114,15 +99,6 @@ select:focus {
   padding: 10px 14px;
   border-radius: 999px;
   font-weight: 700;
-}
-
-.eyebrow {
-  padding: 7px 12px;
-  background: rgba(38, 70, 83, 0.1);
-  color: var(--accent);
-  font-size: 0.86rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .status-chip {
@@ -138,13 +114,6 @@ select:focus {
   color: var(--primary-strong);
 }
 
-.hero h1 {
-  margin: 10px 0 8px;
-  font-size: clamp(2rem, 4vw, 3.3rem);
-  line-height: 1;
-}
-
-.hero p,
 .panel-subtitle,
 .helper-text,
 .message {
@@ -170,6 +139,10 @@ select:focus {
   align-items: start;
 }
 
+.top-grid--single {
+  grid-template-columns: 1fr;
+}
+
 .dashboard-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -179,6 +152,10 @@ select:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.form-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .summary-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 18px 0;
@@ -186,6 +163,10 @@ select:focus {
 
 .field--full {
   grid-column: 1 / -1;
+}
+
+.field--compact {
+  grid-column: span 2;
 }
 
 .panel,
@@ -375,6 +356,22 @@ select:focus {
 
 .chart-box {
   min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-stage {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  min-height: 260px;
+  max-height: 260px;
+  overflow: hidden;
+}
+
+.chart-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .chart-empty,
@@ -423,9 +420,12 @@ select:focus {
   .top-grid,
   .dashboard-grid,
   .summary-grid,
-  .company-grid,
-  .form-grid {
+  .company-grid {
     grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -434,7 +434,6 @@ select:focus {
     padding: 16px 12px 132px;
   }
 
-  .hero,
   .panel,
   .summary-card {
     border-radius: 22px;
@@ -448,11 +447,18 @@ select:focus {
     display: grid;
   }
 
-  .hero-top,
   .section-head,
   .group-head,
   .grand-total {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field--compact {
+    grid-column: auto;
   }
 }

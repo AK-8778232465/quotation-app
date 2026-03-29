@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   BarElement,
   CategoryScale,
@@ -62,6 +63,20 @@ function getMonthlyTotal(entries) {
 
 function AnalyticsDashboard({ entries, groupedEntries }) {
   const monthlyTotal = getMonthlyTotal(entries);
+  const sharedOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      resizeDelay: 200,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+      },
+    }),
+    []
+  );
+  const lineData = useMemo(() => buildLineData(groupedEntries), [groupedEntries]);
+  const barData = useMemo(() => buildBarData(entries), [entries]);
 
   return (
     <div className="dashboard-grid">
@@ -69,7 +84,9 @@ function AnalyticsDashboard({ entries, groupedEntries }) {
         <h2>Trend by date</h2>
         <p className="panel-subtitle">Track how quotation value moves across your work days.</p>
         {groupedEntries.length ? (
-          <Line data={buildLineData(groupedEntries)} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+          <div className="chart-stage">
+            <Line data={lineData} options={sharedOptions} redraw={false} />
+          </div>
         ) : (
           <div className="chart-empty">Add entries to see the daily amount trend.</div>
         )}
@@ -79,7 +96,9 @@ function AnalyticsDashboard({ entries, groupedEntries }) {
         <h2>Equipment usage</h2>
         <p className="panel-subtitle">Top equipment based on entered quantity.</p>
         {entries.length ? (
-          <Bar data={buildBarData(entries)} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+          <div className="chart-stage">
+            <Bar data={barData} options={sharedOptions} redraw={false} />
+          </div>
         ) : (
           <div className="chart-empty">Usage analytics will appear once entries are saved.</div>
         )}

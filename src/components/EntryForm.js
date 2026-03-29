@@ -3,17 +3,16 @@ import { QUOTATION_UNITS } from '../utils/constants';
 import { formatCurrency } from '../utils/quotationHelpers';
 
 function EntryForm({
-  companyDetails,
   draftEntry,
   isSaving,
   message,
   onAddEntry,
-  onCompanyDetailChange,
   onCopyPreviousDay,
   onDraftChange,
   onSeedSample,
   setShowForm,
   showForm,
+  storageMode,
   suggestions,
 }) {
   const amount = useMemo(
@@ -24,45 +23,13 @@ function EntryForm({
   return (
     <div className="panel">
       <div className="section-head">
-        <div>
-          <h2>Quotation setup</h2>
-          <p className="panel-subtitle">Top details are used when generating the final quotation PDF.</p>
+        <div className={`status-chip ${storageMode === 'Supabase' ? '' : 'status-chip--warning'}`}>
+          <span>Storage</span>
+          <strong>{storageMode}</strong>
         </div>
         <button className="btn btn-ghost" onClick={() => setShowForm((current) => !current)} type="button">
           {showForm ? 'Hide entry form' : 'Show entry form'}
         </button>
-      </div>
-
-      <div className="company-grid">
-        <div className="field">
-          <label htmlFor="company-name">Company name</label>
-          <input
-            id="company-name"
-            value={companyDetails.companyName}
-            onChange={(event) => onCompanyDetailChange((current) => ({ ...current, companyName: event.target.value }))}
-            placeholder="Prime Electrical Works"
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="client-name">Client name</label>
-          <input
-            id="client-name"
-            value={companyDetails.clientName}
-            onChange={(event) => onCompanyDetailChange((current) => ({ ...current, clientName: event.target.value }))}
-            placeholder="Client Name"
-          />
-        </div>
-        <div className="field field--full">
-          <label htmlFor="quotation-title">Document title</label>
-          <input
-            id="quotation-title"
-            value={companyDetails.quotationTitle}
-            onChange={(event) =>
-              onCompanyDetailChange((current) => ({ ...current, quotationTitle: event.target.value }))
-            }
-            placeholder="Work Quotation"
-          />
-        </div>
       </div>
 
       {showForm ? (
@@ -91,7 +58,7 @@ function EntryForm({
               <label htmlFor="entry-ref">Ref No</label>
               <input id="entry-ref" value={draftEntry.ref_no} onChange={(event) => onDraftChange('ref_no', event.target.value)} placeholder="REF-101" required />
             </div>
-            <div className="field">
+            <div className="field field--full">
               <label htmlFor="entry-equipment">Equipment name</label>
               <input
                 id="entry-equipment"
@@ -107,16 +74,6 @@ function EntryForm({
                 ))}
               </datalist>
             </div>
-            <div className="field">
-              <label htmlFor="entry-unit">Unit</label>
-              <select id="entry-unit" value={draftEntry.unit} onChange={(event) => onDraftChange('unit', event.target.value)}>
-                {QUOTATION_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="field field--full">
               <label htmlFor="entry-description">Description</label>
               <textarea
@@ -127,11 +84,21 @@ function EntryForm({
                 required
               />
             </div>
-            <div className="field">
+            <div className="field field--compact">
               <label htmlFor="entry-quantity">Quantity</label>
               <input id="entry-quantity" type="number" min="0" step="0.01" value={draftEntry.quantity} onChange={(event) => onDraftChange('quantity', event.target.value)} required />
             </div>
-            <div className="field">
+            <div className="field field--compact">
+              <label htmlFor="entry-unit">Unit</label>
+              <select id="entry-unit" value={draftEntry.unit} onChange={(event) => onDraftChange('unit', event.target.value)}>
+                {QUOTATION_UNITS.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field field--compact">
               <label htmlFor="entry-rate">Rate</label>
               <input
                 id="entry-rate"

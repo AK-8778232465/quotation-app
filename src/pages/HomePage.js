@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import AnalyticsDashboard from '../components/AnalyticsDashboard';
 import EntryForm from '../components/EntryForm';
 import EntryTable from '../components/EntryTable';
 import StickyActionBar from '../components/StickyActionBar';
@@ -8,12 +7,6 @@ import { deleteEntry, getEntries, saveEntry, seedSampleEntries } from '../servic
 import { exportEntriesToExcel, exportEntriesToJson, importEntriesFromJson } from '../utils/exportHelpers';
 import { buildSuggestions, getGrandTotal, getLatestDate, groupEntriesByDate } from '../utils/quotationHelpers';
 import { generateQuotationPdf } from '../utils/pdf';
-
-const defaultCompanyDetails = {
-  companyName: 'Prime Electrical Works',
-  clientName: 'Client Name',
-  quotationTitle: 'Work Quotation',
-};
 
 const emptyEntry = (fallbackDate) => ({
   date: fallbackDate,
@@ -30,7 +23,6 @@ function HomePage() {
   const today = new Date().toISOString().slice(0, 10);
   const [entries, setEntries] = useState([]);
   const [draftEntry, setDraftEntry] = useState(emptyEntry(today));
-  const [companyDetails, setCompanyDetails] = useState(defaultCompanyDetails);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -130,7 +122,7 @@ function HomePage() {
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
     try {
-      generateQuotationPdf({ companyDetails, groupedEntries, grandTotal });
+      generateQuotationPdf({ groupedEntries, grandTotal });
       setMessage({ type: 'success', text: 'Quotation PDF downloaded.' });
     } catch (error) {
       setMessage({ type: 'error', text: 'PDF generation failed. Please try again.' });
@@ -172,33 +164,14 @@ function HomePage() {
 
   return (
     <main className="app-shell">
-      <section className="hero">
-        <div className="hero-top">
-          <div>
-            <span className="eyebrow">Quotation Workspace</span>
-            <h1>Fast daily electrical quotation entry</h1>
-            <p>
-              Add work done, reuse previous job details, check totals instantly, and export a clean quotation
-              without touching spreadsheets.
-            </p>
-          </div>
-          <div className={`status-chip ${storageMode === 'Supabase' ? '' : 'status-chip--warning'}`}>
-            <span>Storage</span>
-            <strong>{storageMode}</strong>
-          </div>
-        </div>
-      </section>
-
       <SummaryCards entries={entries} groupedEntries={groupedEntries} grandTotal={grandTotal} />
 
-      <section className="top-grid">
+      <section className="top-grid top-grid--single">
         <EntryForm
-          companyDetails={companyDetails}
           draftEntry={draftEntry}
           isSaving={isSaving}
           message={message}
           onAddEntry={handleAddEntry}
-          onCompanyDetailChange={setCompanyDetails}
           onCopyPreviousDay={handleCopyPreviousDay}
           onDraftChange={handleDraftChange}
           onSeedSample={async () => {
@@ -208,10 +181,9 @@ function HomePage() {
           }}
           setShowForm={setShowForm}
           showForm={showForm}
+          storageMode={storageMode}
           suggestions={suggestions}
         />
-
-        <AnalyticsDashboard entries={entries} groupedEntries={groupedEntries} />
       </section>
 
       <section className="panel table-panel">
