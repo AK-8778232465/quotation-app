@@ -132,11 +132,6 @@ function HomePage() {
     setIsSaving(false);
   };
 
-  const handleCopyPreviousDay = async (targetDate) => {
-    const result = await persistEntry({ copy_previous_day_to: targetDate }, `Previous working day copied to ${targetDate}.`);
-    if (!result.error) setDraftEntry(emptyEntry(targetDate));
-  };
-
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
     try {
