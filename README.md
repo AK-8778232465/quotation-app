@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+# Quotation App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Mobile-first React single-page application for managing electrical work quotations with Supabase persistence.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Fast daily quotation entry form
+- Auto-calculated amount
+- Equipment-based suggestions for rate and description
+- Copy previous day entries
+- Entries grouped by date with daily total and grand total
+- Mobile editing cards and desktop table view
+- PDF generation with `jsPDF`
+- Analytics with `Chart.js`
+- Excel export
+- JSON backup import/export
+- Local storage fallback when Supabase env vars are not configured
 
-### `npm start`
+## Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```text
+src/
+  components/
+  pages/
+  services/
+  utils/
+  App.js
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Supabase Setup
 
-### `npm test`
+Create a table named `quotation_entries`:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```sql
+create extension if not exists pgcrypto;
 
-### `npm run build`
+create table if not exists public.quotation_entries (
+  id uuid primary key default gen_random_uuid(),
+  date date not null,
+  ref_no text not null,
+  equipment text not null,
+  description text not null,
+  quantity numeric(12,2) not null default 0,
+  unit text not null,
+  rate numeric(12,2) not null default 0,
+  amount numeric(12,2) not null default 0,
+  created_at timestamptz not null default now()
+);
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+create index if not exists quotation_entries_date_idx on public.quotation_entries (date desc);
+create index if not exists quotation_entries_equipment_idx on public.quotation_entries (equipment);
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Create `.env.local` from `.env.example`:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+cp .env.example .env.local
+```
 
-### `npm run eject`
+Fill:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```env
+REACT_APP_SUPABASE_URL=...
+REACT_APP_SUPABASE_ANON_KEY=...
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Run Locally
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+npm install
+npm start
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+App runs at `http://localhost:3000`.
 
-## Learn More
+## Production Build
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm run build
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Deploy the `build/` output to your preferred static host. For Vercel, Netlify, or Nginx static hosting, make sure the environment variables are configured before building.
 
-### Code Splitting
+## Usage Flow
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1. Open the app on mobile or desktop.
+2. Enter company and client details.
+3. Add daily work entries.
+4. Reuse previous entries through suggestions or `Copy previous day`.
+5. Edit grouped rows directly in the quotation table.
+6. Generate PDF or export Excel.
 
-### Analyzing the Bundle Size
+## Notes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- If Supabase is unavailable, the app automatically uses browser local storage.
+- Sample data loads automatically when the app is empty so first-time users can understand the flow quickly.
