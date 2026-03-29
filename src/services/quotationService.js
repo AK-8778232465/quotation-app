@@ -36,15 +36,16 @@ async function fetchSupabaseEntries() {
     return {
       data: withStorageMode(readLocalEntries(), 'local'),
       error: 'Supabase fetch failed. Showing local backup data.',
+      source: 'local',
     };
   }
 
-  return { data: withStorageMode(sortEntries(data), 'supabase'), error: null };
+  return { data: withStorageMode(sortEntries(data), 'supabase'), error: null, source: 'supabase' };
 }
 
 export async function getEntries() {
   if (hasSupabaseConfig) return fetchSupabaseEntries();
-  return { data: withStorageMode(readLocalEntries(), 'local'), error: null };
+  return { data: withStorageMode(readLocalEntries(), 'local'), error: null, source: 'local' };
 }
 
 async function insertLocalEntry(payload) {
@@ -84,7 +85,7 @@ async function copyPreviousDayLocal(targetDate) {
       })
     );
 
-  return { data: writeLocalEntries([...nextEntries, ...clones]), error: null };
+  return { data: writeLocalEntries([...nextEntries, ...clones]), error: null, source: 'local' };
 }
 
 async function copyPreviousDaySupabase(targetDate) {
@@ -99,6 +100,7 @@ async function copyPreviousDaySupabase(targetDate) {
     return {
       data: entriesResult.data,
       error: 'No previous day entries found to copy.',
+      source: entriesResult.source,
     };
   }
 
@@ -138,6 +140,7 @@ export async function saveEntry(payload) {
     return {
       data: fallback.data,
       error: 'Supabase save failed. Entry stored in local backup only.',
+      source: 'local',
     };
   }
 
@@ -147,13 +150,17 @@ export async function saveEntry(payload) {
 export async function deleteEntry(entryId) {
   if (!hasSupabaseConfig) {
     const nextEntries = readLocalEntries().filter((entry) => entry.id !== entryId);
-    return { data: writeLocalEntries(nextEntries), error: null };
+    return { data: writeLocalEntries(nextEntries), error: null, source: 'local' };
   }
 
   const { error } = await supabase.from('quotation_entries').delete().eq('id', entryId);
   if (error) {
     const nextEntries = readLocalEntries().filter((entry) => entry.id !== entryId);
-    return { data: writeLocalEntries(nextEntries), error: 'Supabase delete failed. Entry removed from local backup only.' };
+    return {
+      data: writeLocalEntries(nextEntries),
+      error: 'Supabase delete failed. Entry removed from local backup only.',
+      source: 'local',
+    };
   }
 
   return fetchSupabaseEntries();

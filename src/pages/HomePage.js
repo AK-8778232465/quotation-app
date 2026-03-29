@@ -39,6 +39,7 @@ function HomePage() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showForm, setShowForm] = useState(true);
   const [pdfRange, setPdfRange] = useState({ from: defaultFromDate, to: today });
+  const [storageSource, setStorageSource] = useState('local');
 
   useEffect(() => {
     const loadEntries = async () => {
@@ -47,6 +48,7 @@ function HomePage() {
 
       if (result.error) setMessage({ type: 'error', text: result.error });
       setEntries(result.data || []);
+      setStorageSource(result.source || 'local');
 
       setIsLoading(false);
     };
@@ -77,6 +79,7 @@ function HomePage() {
       setEntries(result.data);
       setMessage({ type: 'success', text: successText });
     }
+    setStorageSource(result.source || 'local');
     setIsSaving(false);
     return result;
   };
@@ -125,6 +128,7 @@ function HomePage() {
       setEntries(result.data);
       setMessage({ type: 'success', text: 'Entry deleted.' });
     }
+    setStorageSource(result.source || 'local');
     setIsSaving(false);
   };
 
@@ -172,6 +176,7 @@ function HomePage() {
           return;
         }
         latestData = result.data;
+        setStorageSource(result.source || 'local');
       }
 
       setEntries(latestData);
@@ -183,7 +188,7 @@ function HomePage() {
     }
   };
 
-  const storageMode = entries.some((entry) => entry.storage_mode === 'supabase') ? 'Supabase' : 'Local backup';
+  const storageMode = storageSource === 'supabase' ? 'Supabase' : 'Local backup';
 
   return (
     <main className="app-shell">
@@ -195,7 +200,6 @@ function HomePage() {
           isSaving={isSaving}
           message={message}
           onAddEntry={handleAddEntry}
-          onCopyPreviousDay={handleCopyPreviousDay}
           onDraftChange={handleDraftChange}
           setShowForm={setShowForm}
           showForm={showForm}

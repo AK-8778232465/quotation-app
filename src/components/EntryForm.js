@@ -7,7 +7,6 @@ function EntryForm({
   isSaving,
   message,
   onAddEntry,
-  onCopyPreviousDay,
   onDraftChange,
   setShowForm,
   showForm,
@@ -37,11 +36,6 @@ function EntryForm({
             <div>
               <h3>Add daily entry</h3>
               <p className="panel-subtitle">Previous equipment entries help auto-fill descriptions and rates.</p>
-            </div>
-            <div className="inline-actions">
-              <button className="btn btn-secondary" onClick={() => onCopyPreviousDay(draftEntry.date)} type="button">
-                Copy previous day
-              </button>
             </div>
           </div>
 
