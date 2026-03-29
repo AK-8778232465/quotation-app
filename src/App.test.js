@@ -6,7 +6,8 @@ jest.mock('react-chartjs-2', () => ({
   Bar: () => null,
 }));
 
-test('renders quotation workspace heading', async () => {
+test('renders password gate on first load', async () => {
   render(<App />);
-  expect(await screen.findByText(/Fast daily electrical quotation entry/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Quotation App/i)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
 });

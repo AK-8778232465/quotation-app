@@ -20,7 +20,17 @@ export function importEntriesFromJson(file) {
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result || '[]');
-        resolve(Array.isArray(parsed) ? parsed : []);
+        if (Array.isArray(parsed)) {
+          resolve(parsed);
+          return;
+        }
+
+        if (Array.isArray(parsed?.entries)) {
+          resolve(parsed.entries);
+          return;
+        }
+
+        resolve([]);
       } catch (error) {
         reject(error);
       }

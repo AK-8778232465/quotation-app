@@ -9,7 +9,6 @@ function EntryForm({
   onAddEntry,
   onCopyPreviousDay,
   onDraftChange,
-  onSeedSample,
   setShowForm,
   showForm,
   storageMode,
@@ -42,9 +41,6 @@ function EntryForm({
             <div className="inline-actions">
               <button className="btn btn-secondary" onClick={() => onCopyPreviousDay(draftEntry.date)} type="button">
                 Copy previous day
-              </button>
-              <button className="btn btn-secondary" onClick={onSeedSample} type="button">
-                Load sample data
               </button>
             </div>
           </div>
@@ -125,23 +121,19 @@ function EntryForm({
             </div>
           </div>
 
-          <div className="button-row" style={{ marginTop: 16 }}>
+          <div className="button-row button-row--center" style={{ marginTop: 16 }}>
             <button className="btn btn-primary" type="submit" disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Save entry'}
             </button>
           </div>
         </form>
       ) : (
-        <div className="empty-state">
-          <p className="helper-text">Use the sticky Add Entry button below whenever you want to enter a new item.</p>
-        </div>
+        null
       )}
 
       {message.text ? (
         <p className={`message ${message.type === 'error' ? 'message--error' : 'message--success'}`}>{message.text}</p>
-      ) : (
-        <p className="helper-text">Without Supabase env vars, the app still works using browser local storage.</p>
-      )}
+      ) : null}
     </div>
   );
 }

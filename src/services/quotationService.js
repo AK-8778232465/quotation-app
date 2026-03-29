@@ -1,5 +1,4 @@
 import { hasSupabaseConfig, supabase } from './supabase';
-import { sampleEntries } from '../utils/sampleData';
 import { calculateAmount, normalizeEntry, sortEntries } from '../utils/quotationHelpers';
 
 const STORAGE_KEY = 'quotation_entries_v1';
@@ -13,7 +12,9 @@ function readLocalEntries() {
   if (!rawEntries) return [];
 
   try {
-    return JSON.parse(rawEntries).map((entry) => normalizeEntry(entry));
+    const parsedEntries = JSON.parse(rawEntries).map((entry) => normalizeEntry(entry));
+    const hasOnlySampleEntries = parsedEntries.length > 0 && parsedEntries.every((entry) => String(entry.id).startsWith('sample-'));
+    return hasOnlySampleEntries ? [] : parsedEntries;
   } catch (error) {
     return [];
   }
@@ -44,14 +45,6 @@ async function fetchSupabaseEntries() {
 export async function getEntries() {
   if (hasSupabaseConfig) return fetchSupabaseEntries();
   return { data: withStorageMode(readLocalEntries(), 'local'), error: null };
-}
-
-export async function seedSampleEntries() {
-  const currentEntries = readLocalEntries();
-  if (currentEntries.length) return { data: withStorageMode(sortEntries(currentEntries), 'local'), error: null };
-
-  const normalizedEntries = sampleEntries.map((entry) => normalizeEntry(entry));
-  return { data: writeLocalEntries(normalizedEntries), error: null };
 }
 
 async function insertLocalEntry(payload) {

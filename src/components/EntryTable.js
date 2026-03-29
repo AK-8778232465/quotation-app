@@ -88,99 +88,82 @@ function EntryTable({ groupedEntries, grandTotal, isLoading, isSaving, onDeleteE
   if (isLoading) return <div className="empty-state">Loading quotation entries...</div>;
   if (!groupedEntries.length) return <div className="empty-state">No entries yet. Add your first work item to begin.</div>;
 
+  const flatEntries = groupedEntries.flatMap((group) => group.entries);
+
   return (
     <div className="table-grid">
-      {groupedEntries.map((group) => (
-        <section className="date-group" key={group.date}>
-          <div className="group-head">
-            <div>
-              <h3>{group.label}</h3>
-              <p className="panel-subtitle">
-                {group.entries.length} entries, daily total {formatCurrency(group.total)}
-              </p>
-            </div>
-            {isSaving ? <span className="helper-text">Saving changes...</span> : null}
-          </div>
+      {isSaving ? <span className="helper-text">Saving changes...</span> : null}
 
-          <div className="table-wrap">
-            <table className="desktop-table">
-              <thead>
-                <tr>
-                  <th>SI No</th>
-                  <th>Date</th>
-                  <th>Ref No</th>
-                  <th>Equipment</th>
-                  <th>Description</th>
-                  <th>Qty</th>
-                  <th>Unit</th>
-                  <th>Rate</th>
-                  <th>Amount</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.entries.map((entry) => (
-                  <tr key={entry.id}>
-                    <td>{entry.sequence}</td>
-                    <td>
-                      <input type="date" defaultValue={entry.date} onBlur={(event) => onUpdateEntry({ ...entry, date: event.target.value })} />
-                    </td>
-                    <td>
-                      <input defaultValue={entry.ref_no} onBlur={(event) => onUpdateEntry({ ...entry, ref_no: event.target.value })} />
-                    </td>
-                    <td>
-                      <input defaultValue={entry.equipment} onBlur={(event) => onUpdateEntry({ ...entry, equipment: event.target.value })} />
-                    </td>
-                    <td>
-                      <textarea defaultValue={entry.description} onBlur={(event) => onUpdateEntry({ ...entry, description: event.target.value })} />
-                    </td>
-                    <td>
-                      <input type="number" min="0" step="0.01" defaultValue={entry.quantity} onBlur={(event) => onUpdateEntry({ ...entry, quantity: Number(event.target.value || 0) })} />
-                    </td>
-                    <td>
-                      <select defaultValue={entry.unit} onChange={(event) => onUpdateEntry({ ...entry, unit: event.target.value })}>
-                        {QUOTATION_UNITS.map((unit) => (
-                          <option key={unit} value={unit}>
-                            {unit}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <input type="number" min="0" step="0.01" defaultValue={entry.rate} onBlur={(event) => onUpdateEntry({ ...entry, rate: Number(event.target.value || 0) })} />
-                    </td>
-                    <td className="cell-amount">{formatCurrency(entry.amount)}</td>
-                    <td>
-                      <button className="btn btn-danger" onClick={() => onDeleteEntry(entry.id)} type="button">
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mobile-cards">
-            {group.entries.map((entry) => (
-              <EditableCard
-                entry={entry}
-                key={`mobile-${entry.id}`}
-                onDeleteEntry={onDeleteEntry}
-                onUpdateEntry={onUpdateEntry}
-                suggestions={suggestions}
-              />
+      <div className="table-wrap">
+        <table className="desktop-table">
+          <thead>
+            <tr>
+              <th>SI No</th>
+              <th>Date</th>
+              <th>Ref No</th>
+              <th>Equipment</th>
+              <th>Description</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Rate</th>
+              <th>Amount</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {flatEntries.map((entry, index) => (
+              <tr key={entry.id}>
+                <td>{index + 1}</td>
+                <td>
+                  <input type="date" defaultValue={entry.date} onBlur={(event) => onUpdateEntry({ ...entry, date: event.target.value })} />
+                </td>
+                <td>
+                  <input defaultValue={entry.ref_no} onBlur={(event) => onUpdateEntry({ ...entry, ref_no: event.target.value })} />
+                </td>
+                <td>
+                  <input defaultValue={entry.equipment} onBlur={(event) => onUpdateEntry({ ...entry, equipment: event.target.value })} />
+                </td>
+                <td>
+                  <textarea defaultValue={entry.description} onBlur={(event) => onUpdateEntry({ ...entry, description: event.target.value })} />
+                </td>
+                <td>
+                  <input type="number" min="0" step="0.01" defaultValue={entry.quantity} onBlur={(event) => onUpdateEntry({ ...entry, quantity: Number(event.target.value || 0) })} />
+                </td>
+                <td>
+                  <select defaultValue={entry.unit} onChange={(event) => onUpdateEntry({ ...entry, unit: event.target.value })}>
+                    {QUOTATION_UNITS.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <input type="number" min="0" step="0.01" defaultValue={entry.rate} onBlur={(event) => onUpdateEntry({ ...entry, rate: Number(event.target.value || 0) })} />
+                </td>
+                <td className="cell-amount">{formatCurrency(entry.amount)}</td>
+                <td>
+                  <button className="btn btn-danger" onClick={() => onDeleteEntry(entry.id)} type="button">
+                    Delete
+                  </button>
+                </td>
+              </tr>
             ))}
-          </div>
+          </tbody>
+        </table>
+      </div>
 
-          <div className="totals-row">
-            <div className="total-pill">
-              <span>Daily total</span>
-              <strong>{formatCurrency(group.total)}</strong>
-            </div>
-          </div>
-        </section>
-      ))}
+      <div className="mobile-cards">
+        {flatEntries.map((entry, index) => (
+          <EditableCard
+            entry={{ ...entry, sequence: index + 1 }}
+            key={`mobile-${entry.id}`}
+            onDeleteEntry={onDeleteEntry}
+            onUpdateEntry={onUpdateEntry}
+            suggestions={suggestions}
+          />
+        ))}
+      </div>
 
       <div className="grand-total">
         <div>

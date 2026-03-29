@@ -3,9 +3,15 @@ import EntryForm from '../components/EntryForm';
 import EntryTable from '../components/EntryTable';
 import StickyActionBar from '../components/StickyActionBar';
 import SummaryCards from '../components/SummaryCards';
-import { deleteEntry, getEntries, saveEntry, seedSampleEntries } from '../services/quotationService';
+import { deleteEntry, getEntries, saveEntry } from '../services/quotationService';
 import { exportEntriesToExcel, exportEntriesToJson, importEntriesFromJson } from '../utils/exportHelpers';
-import { buildSuggestions, getGrandTotal, getLatestDate, groupEntriesByDate } from '../utils/quotationHelpers';
+import {
+  buildSuggestions,
+  filterEntriesByDateRange,
+  getGrandTotal,
+  getLatestDate,
+  groupEntriesByDate,
+} from '../utils/quotationHelpers';
 import { generateQuotationPdf } from '../utils/pdf';
 
 const emptyEntry = (fallbackDate) => ({
@@ -13,14 +19,18 @@ const emptyEntry = (fallbackDate) => ({
   ref_no: '',
   equipment: '',
   description: '',
-  quantity: '1',
+  quantity: '',
   unit: 'NO',
   rate: '',
   amount: 0,
 });
 
 function HomePage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const currentDate = new Date();
+  const today = currentDate.toISOString().slice(0, 10);
+  const lastSevenDaysStart = new Date(currentDate);
+  lastSevenDaysStart.setDate(currentDate.getDate() - 6);
+  const defaultFromDate = lastSevenDaysStart.toISOString().slice(0, 10);
   const [entries, setEntries] = useState([]);
   const [draftEntry, setDraftEntry] = useState(emptyEntry(today));
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +38,7 @@ function HomePage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showForm, setShowForm] = useState(true);
+  const [pdfRange, setPdfRange] = useState({ from: defaultFromDate, to: today });
 
   useEffect(() => {
     const loadEntries = async () => {
@@ -36,14 +47,6 @@ function HomePage() {
 
       if (result.error) setMessage({ type: 'error', text: result.error });
       setEntries(result.data || []);
-
-      if (!result.data?.length) {
-        const seeded = await seedSampleEntries();
-        setEntries(seeded.data || []);
-        if (seeded.data?.length) {
-          setMessage({ type: 'success', text: 'Sample entries loaded so you can start quickly.' });
-        }
-      }
 
       setIsLoading(false);
     };
@@ -59,6 +62,12 @@ function HomePage() {
   const suggestions = useMemo(() => buildSuggestions(entries), [entries]);
   const groupedEntries = useMemo(() => groupEntriesByDate(entries), [entries]);
   const grandTotal = useMemo(() => getGrandTotal(entries), [entries]);
+  const filteredPdfEntries = useMemo(
+    () => filterEntriesByDateRange(entries, pdfRange.from, pdfRange.to),
+    [entries, pdfRange.from, pdfRange.to]
+  );
+  const filteredPdfGroups = useMemo(() => groupEntriesByDate(filteredPdfEntries), [filteredPdfEntries]);
+  const filteredPdfTotal = useMemo(() => getGrandTotal(filteredPdfEntries), [filteredPdfEntries]);
 
   const persistEntry = async (payload, successText) => {
     setIsSaving(true);
@@ -104,6 +113,11 @@ function HomePage() {
   };
 
   const handleDeleteEntry = async (entryId) => {
+    const confirmed = window.confirm('Are you sure you want to delete this entry?');
+    if (!confirmed) {
+      return;
+    }
+
     setIsSaving(true);
     const result = await deleteEntry(entryId);
     if (result.error) setMessage({ type: 'error', text: result.error });
@@ -122,8 +136,17 @@ function HomePage() {
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
     try {
-      generateQuotationPdf({ groupedEntries, grandTotal });
-      setMessage({ type: 'success', text: 'Quotation PDF downloaded.' });
+      if (!filteredPdfEntries.length) {
+        setMessage({ type: 'error', text: 'No entries found in the selected date range for PDF export.' });
+        setIsGeneratingPdf(false);
+        return;
+      }
+
+      generateQuotationPdf({ groupedEntries: filteredPdfGroups, grandTotal: filteredPdfTotal });
+      setMessage({
+        type: 'success',
+        text: `Quotation PDF downloaded for ${pdfRange.from} to ${pdfRange.to}.`,
+      });
     } catch (error) {
       setMessage({ type: 'error', text: 'PDF generation failed. Please try again.' });
     }
@@ -174,11 +197,6 @@ function HomePage() {
           onAddEntry={handleAddEntry}
           onCopyPreviousDay={handleCopyPreviousDay}
           onDraftChange={handleDraftChange}
-          onSeedSample={async () => {
-            const seeded = await seedSampleEntries();
-            setEntries(seeded.data || []);
-            setMessage({ type: 'success', text: 'Sample entries loaded.' });
-          }}
           setShowForm={setShowForm}
           showForm={showForm}
           storageMode={storageMode}
@@ -189,22 +207,42 @@ function HomePage() {
       <section className="panel table-panel">
         <div className="section-head">
           <div>
-            <h2>Daily quotations</h2>
-            <p className="panel-subtitle">Rows are grouped by date, with editable fields and instant totals.</p>
+            <h2>Quotation Datas</h2>
+            <p className="panel-subtitle">Use the date range below to view and edit only the required entries.</p>
           </div>
           <div className="inline-actions">
-            <button className="btn btn-secondary" onClick={handleGeneratePdf} disabled={isGeneratingPdf || !entries.length}>
+            <div className="export-range">
+              <div className="field export-range-field">
+                <label htmlFor="pdf-from-date">From</label>
+                <input
+                  id="pdf-from-date"
+                  type="date"
+                  value={pdfRange.from}
+                  onChange={(event) => setPdfRange((current) => ({ ...current, from: event.target.value }))}
+                />
+              </div>
+              <div className="field export-range-field">
+                <label htmlFor="pdf-to-date">To</label>
+                <input
+                  id="pdf-to-date"
+                  type="date"
+                  value={pdfRange.to}
+                  onChange={(event) => setPdfRange((current) => ({ ...current, to: event.target.value }))}
+                />
+              </div>
+            </div>
+            <button className="btn btn-secondary desktop-only" onClick={handleGeneratePdf} disabled={isGeneratingPdf || !entries.length}>
               {isGeneratingPdf ? 'Preparing PDF...' : 'Generate PDF'}
             </button>
-            <button className="btn btn-secondary" onClick={() => exportEntriesToExcel(entries)} disabled={!entries.length}>
+            <button className="btn btn-secondary desktop-only" onClick={() => exportEntriesToExcel(entries)} disabled={!entries.length}>
               Export Excel
             </button>
           </div>
         </div>
 
         <EntryTable
-          groupedEntries={groupedEntries}
-          grandTotal={grandTotal}
+          groupedEntries={filteredPdfGroups}
+          grandTotal={filteredPdfTotal}
           isLoading={isLoading}
           isSaving={isSaving}
           onDeleteEntry={handleDeleteEntry}

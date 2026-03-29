@@ -77,6 +77,68 @@ select:focus {
   padding: 24px 16px 120px;
 }
 
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow);
+}
+
+.auth-badge {
+  display: inline-flex;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(38, 70, 83, 0.1);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.auth-card h1 {
+  margin: 16px 0 8px;
+  font-size: clamp(2rem, 5vw, 2.6rem);
+}
+
+.auth-copy {
+  margin: 0 0 18px;
+  color: var(--text-soft);
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-button {
+  width: 100%;
+}
+
+.session-pill {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .section-head,
 .group-head,
 .grand-total,
@@ -89,6 +151,10 @@ select:focus {
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+}
+
+.button-row--center {
+  justify-content: center;
 }
 
 .status-chip,
@@ -278,6 +344,26 @@ select:focus {
   overflow: hidden;
 }
 
+.export-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.export-range-field {
+  gap: 6px;
+  min-width: 150px;
+}
+
+.export-range-field label {
+  font-size: 0.8rem;
+}
+
+.export-range-field input {
+  min-height: 44px;
+}
+
 .date-group {
   margin-bottom: 20px;
   padding: 14px;
@@ -416,6 +502,10 @@ select:focus {
   border: 0;
 }
 
+.desktop-only {
+  display: inline-flex;
+}
+
 @media (max-width: 1080px) {
   .top-grid,
   .dashboard-grid,
@@ -426,6 +516,10 @@ select:focus {
 
   .form-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sticky-actions {
+    display: none;
   }
 }
 
@@ -454,11 +548,31 @@ select:focus {
     flex-direction: column;
   }
 
+  .export-range {
+    width: 100%;
+  }
+
+  .export-range-field {
+    min-width: 0;
+    width: 100%;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
 
   .field--compact {
     grid-column: auto;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .session-pill {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    text-align: center;
   }
 }

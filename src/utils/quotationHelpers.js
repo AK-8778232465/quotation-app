@@ -71,6 +71,23 @@ export function getLatestDate(entries) {
   return sortEntries(entries)[0]?.date;
 }
 
+export function getOldestDate(entries) {
+  return sortEntries(entries).at(-1)?.date;
+}
+
+export function filterEntriesByDateRange(entries, fromDate, toDate) {
+  return entries.filter((entry) => {
+    const entryDate = entry.date;
+    if (fromDate && entryDate < fromDate) {
+      return false;
+    }
+    if (toDate && entryDate > toDate) {
+      return false;
+    }
+    return true;
+  });
+}
+
 export function buildSuggestions(entries) {
   const equipmentMap = {};
   const equipmentNames = [];
