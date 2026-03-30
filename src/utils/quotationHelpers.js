@@ -1,5 +1,44 @@
+export function parseQuantityValue(quantity) {
+  const normalizedQuantity = String(quantity ?? '').trim().replace(',', '.');
+  if (!normalizedQuantity) {
+    return null;
+  }
+
+  const match = normalizedQuantity.match(/^(\d+(?:\.\d+)?)(?:\s+([A-Za-z]+))?$/);
+  return match ? Number(match[1]) : null;
+}
+
+export function extractUnitFromQuantity(quantity) {
+  const normalizedQuantity = String(quantity ?? '').trim();
+  if (!normalizedQuantity) return '';
+
+  const withoutLeadingNumber = normalizedQuantity.replace(/^-?\d+(\.\d+)?\s*/, '').trim();
+  return withoutLeadingNumber || normalizedQuantity;
+}
+
 export function calculateAmount(quantity, rate) {
-  return Number(quantity || 0) * Number(rate || 0);
+  const quantityValue = parseQuantityValue(quantity);
+  if (quantityValue === null) {
+    return null;
+  }
+
+  return quantityValue * Number(rate || 0);
+}
+
+export function resolveAmount(entry) {
+  if (entry.amount !== null && entry.amount !== undefined && String(entry.amount).trim() !== '') {
+    const explicitAmount = Number(entry.amount);
+    if (Number.isFinite(explicitAmount)) {
+      return explicitAmount;
+    }
+  }
+
+  const calculatedAmount = calculateAmount(entry.quantity, entry.rate);
+  if (calculatedAmount !== null) {
+    return calculatedAmount;
+  }
+
+  return 0;
 }
 
 export function normalizeEntry(entry) {
@@ -9,10 +48,10 @@ export function normalizeEntry(entry) {
     ref_no: entry.ref_no || '',
     equipment: entry.equipment || '',
     description: entry.description || '',
-    quantity: Number(entry.quantity || 0),
-    unit: entry.unit || 'NO',
+    quantity: String(entry.quantity ?? '').trim(),
+    unit: entry.unit || extractUnitFromQuantity(entry.quantity),
     rate: Number(entry.rate || 0),
-    amount: Number(entry.amount ?? calculateAmount(entry.quantity, entry.rate)),
+    amount: resolveAmount(entry),
     created_at: entry.created_at || new Date().toISOString(),
   };
 }
@@ -99,7 +138,7 @@ export function buildSuggestions(entries) {
       equipmentMap[entry.equipment.toLowerCase()] = {
         description: entry.description,
         rate: entry.rate,
-        unit: entry.unit,
+        quantity: entry.quantity,
       };
       equipmentNames.push(entry.equipment);
     }

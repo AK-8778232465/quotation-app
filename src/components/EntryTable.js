@@ -1,12 +1,32 @@
 import { useEffect, useState } from 'react';
-import { QUOTATION_UNITS } from '../utils/constants';
-import { formatCurrency } from '../utils/quotationHelpers';
+import { calculateAmount, formatCurrency } from '../utils/quotationHelpers';
 
-function EditableCard({ entry, onDeleteEntry, onUpdateEntry, suggestions }) {
-  const [draft, setDraft] = useState(entry);
+function getNextAmount(previousDraft, nextDraft, changedField) {
+  const suggestedAmount = calculateAmount(nextDraft.quantity, nextDraft.rate);
+  const previousSuggestedAmount = calculateAmount(previousDraft.quantity, previousDraft.rate);
+  const normalizedCurrentAmount = String(previousDraft.amount ?? '').trim();
+
+  if (changedField !== 'amount' && suggestedAmount === null) {
+    return '';
+  }
+
+  const shouldAutoFill =
+    changedField !== 'amount' &&
+    (normalizedCurrentAmount === '' ||
+      (previousSuggestedAmount !== null && Number(normalizedCurrentAmount) === Number(previousSuggestedAmount)));
+
+  if (shouldAutoFill && suggestedAmount !== null) {
+    return String(suggestedAmount);
+  }
+
+  return nextDraft.amount;
+}
+
+function EditableDesktopRow({ entry, onDeleteEntry, onUpdateEntry, suggestions, sequence }) {
+  const [draft, setDraft] = useState({ ...entry, amount: String(entry.amount ?? '') });
 
   useEffect(() => {
-    setDraft(entry);
+    setDraft({ ...entry, amount: String(entry.amount ?? '') });
   }, [entry]);
 
   const updateDraft = (field, value) => {
@@ -15,25 +35,90 @@ function EditableCard({ entry, onDeleteEntry, onUpdateEntry, suggestions }) {
       const suggestion = suggestions.equipmentLookup[value.trim().toLowerCase()];
       if (suggestion) {
         nextDraft.description = nextDraft.description || suggestion.description;
-        nextDraft.rate = nextDraft.rate || suggestion.rate;
-        nextDraft.unit = nextDraft.unit || suggestion.unit;
+        nextDraft.rate = nextDraft.rate || String(suggestion.rate || '');
+        nextDraft.quantity = nextDraft.quantity || suggestion.quantity || '';
       }
     }
+
+    nextDraft.amount = getNextAmount(draft, nextDraft, field);
     setDraft(nextDraft);
   };
 
-  const normalizedDraft = {
-    ...draft,
-    quantity: Number(draft.quantity || 0),
-    rate: Number(draft.rate || 0),
+  const suggestedAmount = calculateAmount(draft.quantity, draft.rate);
+  const saveDraft = () =>
+    onUpdateEntry({
+      ...draft,
+      rate: Number(draft.rate || 0),
+      amount: draft.amount === '' ? null : Number(draft.amount || 0),
+    });
+
+  return (
+    <tr>
+      <td>{sequence}</td>
+      <td>
+        <input type="date" value={draft.date} onChange={(event) => updateDraft('date', event.target.value)} />
+      </td>
+      <td>
+        <input value={draft.ref_no} onChange={(event) => updateDraft('ref_no', event.target.value)} />
+      </td>
+      <td>
+        <input value={draft.equipment} onChange={(event) => updateDraft('equipment', event.target.value)} />
+      </td>
+      <td>
+        <textarea value={draft.description} onChange={(event) => updateDraft('description', event.target.value)} />
+      </td>
+      <td>
+        <input value={draft.quantity} onChange={(event) => updateDraft('quantity', event.target.value)} placeholder="25 MTR or LS" />
+      </td>
+      <td>
+        <input type="number" min="0" step="0.01" value={draft.rate} onChange={(event) => updateDraft('rate', event.target.value)} />
+      </td>
+      <td>
+        <input type="number" min="0" step="0.01" value={draft.amount} onChange={(event) => updateDraft('amount', event.target.value)} />
+        <div className="table-helper-text">{suggestedAmount === null ? 'Manual' : `Suggested ${formatCurrency(suggestedAmount)}`}</div>
+      </td>
+      <td>
+        <div className="row-actions">
+          <button className="btn btn-secondary" onClick={saveDraft} type="button">
+            Save
+          </button>
+          <button className="btn btn-danger" onClick={() => onDeleteEntry(entry.id)} type="button">
+            Delete
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function EditableCard({ entry, onDeleteEntry, onUpdateEntry, suggestions }) {
+  const [draft, setDraft] = useState({ ...entry, amount: String(entry.amount ?? '') });
+
+  useEffect(() => {
+    setDraft({ ...entry, amount: String(entry.amount ?? '') });
+  }, [entry]);
+
+  const updateDraft = (field, value) => {
+    const nextDraft = { ...draft, [field]: value };
+    if (field === 'equipment') {
+      const suggestion = suggestions.equipmentLookup[value.trim().toLowerCase()];
+      if (suggestion) {
+        nextDraft.description = nextDraft.description || suggestion.description;
+        nextDraft.rate = nextDraft.rate || String(suggestion.rate || '');
+        nextDraft.quantity = nextDraft.quantity || suggestion.quantity || '';
+      }
+    }
+    nextDraft.amount = getNextAmount(draft, nextDraft, field);
+    setDraft(nextDraft);
   };
-  const rowAmount = normalizedDraft.quantity * normalizedDraft.rate;
+
+  const suggestedAmount = calculateAmount(draft.quantity, draft.rate);
 
   return (
     <div className="entry-card">
       <div className="entry-card-head">
         <strong>#{entry.sequence}</strong>
-        <span className="cell-amount">{formatCurrency(rowAmount)}</span>
+        <span className="cell-amount">{formatCurrency(draft.amount || suggestedAmount || 0)}</span>
       </div>
 
       <div className="entry-card-grid">
@@ -54,25 +139,30 @@ function EditableCard({ entry, onDeleteEntry, onUpdateEntry, suggestions }) {
           <textarea value={draft.description} onChange={(event) => updateDraft('description', event.target.value)} />
         </div>
         <div className="field">
-          <label>Quantity</label>
-          <input type="number" min="0" step="0.01" value={draft.quantity} onChange={(event) => updateDraft('quantity', event.target.value)} />
-        </div>
-        <div className="field">
-          <label>Unit</label>
-          <select value={draft.unit} onChange={(event) => updateDraft('unit', event.target.value)}>
-            {QUOTATION_UNITS.map((unit) => (
-              <option key={unit} value={unit}>
-                {unit}
-              </option>
-            ))}
-          </select>
+          <label>Quantity / Unit</label>
+          <input value={draft.quantity} onChange={(event) => updateDraft('quantity', event.target.value)} />
         </div>
         <div className="field">
           <label>Rate</label>
           <input type="number" min="0" step="0.01" value={draft.rate} onChange={(event) => updateDraft('rate', event.target.value)} />
         </div>
+        <div className="field">
+          <label>Amount</label>
+          <input type="number" min="0" step="0.01" value={draft.amount} onChange={(event) => updateDraft('amount', event.target.value)} />
+          <span className="table-helper-text">{suggestedAmount === null ? 'Manual amount required' : `Suggested ${formatCurrency(suggestedAmount)}`}</span>
+        </div>
         <div className="inline-actions">
-          <button className="btn btn-secondary" onClick={() => onUpdateEntry({ ...normalizedDraft, amount: rowAmount })} type="button">
+          <button
+            className="btn btn-secondary"
+            onClick={() =>
+              onUpdateEntry({
+                ...draft,
+                rate: Number(draft.rate || 0),
+                amount: draft.amount === '' ? null : Number(draft.amount || 0),
+              })
+            }
+            type="button"
+          >
             Save
           </button>
           <button className="btn btn-danger" onClick={() => onDeleteEntry(entry.id)} type="button">
@@ -103,8 +193,7 @@ function EntryTable({ groupedEntries, grandTotal, isLoading, isSaving, onDeleteE
               <th>Ref No</th>
               <th>Equipment</th>
               <th>Description</th>
-              <th>Qty</th>
-              <th>Unit</th>
+              <th>Qty / Unit</th>
               <th>Rate</th>
               <th>Amount</th>
               <th>Action</th>
@@ -112,42 +201,14 @@ function EntryTable({ groupedEntries, grandTotal, isLoading, isSaving, onDeleteE
           </thead>
           <tbody>
             {flatEntries.map((entry, index) => (
-              <tr key={entry.id}>
-                <td>{index + 1}</td>
-                <td>
-                  <input type="date" defaultValue={entry.date} onBlur={(event) => onUpdateEntry({ ...entry, date: event.target.value })} />
-                </td>
-                <td>
-                  <input defaultValue={entry.ref_no} onBlur={(event) => onUpdateEntry({ ...entry, ref_no: event.target.value })} />
-                </td>
-                <td>
-                  <input defaultValue={entry.equipment} onBlur={(event) => onUpdateEntry({ ...entry, equipment: event.target.value })} />
-                </td>
-                <td>
-                  <textarea defaultValue={entry.description} onBlur={(event) => onUpdateEntry({ ...entry, description: event.target.value })} />
-                </td>
-                <td>
-                  <input type="number" min="0" step="0.01" defaultValue={entry.quantity} onBlur={(event) => onUpdateEntry({ ...entry, quantity: Number(event.target.value || 0) })} />
-                </td>
-                <td>
-                  <select defaultValue={entry.unit} onChange={(event) => onUpdateEntry({ ...entry, unit: event.target.value })}>
-                    {QUOTATION_UNITS.map((unit) => (
-                      <option key={unit} value={unit}>
-                        {unit}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <input type="number" min="0" step="0.01" defaultValue={entry.rate} onBlur={(event) => onUpdateEntry({ ...entry, rate: Number(event.target.value || 0) })} />
-                </td>
-                <td className="cell-amount">{formatCurrency(entry.amount)}</td>
-                <td>
-                  <button className="btn btn-danger" onClick={() => onDeleteEntry(entry.id)} type="button">
-                    Delete
-                  </button>
-                </td>
-              </tr>
+              <EditableDesktopRow
+                entry={entry}
+                key={entry.id}
+                onDeleteEntry={onDeleteEntry}
+                onUpdateEntry={onUpdateEntry}
+                sequence={index + 1}
+                suggestions={suggestions}
+              />
             ))}
           </tbody>
         </table>

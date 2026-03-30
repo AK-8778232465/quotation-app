@@ -7,6 +7,7 @@ import { deleteEntry, getEntries, saveEntry } from '../services/quotationService
 import { exportEntriesToExcel, exportEntriesToJson, importEntriesFromJson } from '../utils/exportHelpers';
 import {
   buildSuggestions,
+  calculateAmount,
   filterEntriesByDateRange,
   getGrandTotal,
   getLatestDate,
@@ -20,10 +21,30 @@ const emptyEntry = (fallbackDate) => ({
   equipment: '',
   description: '',
   quantity: '',
-  unit: 'NO',
   rate: '',
-  amount: 0,
+  amount: '',
 });
+
+function getNextAmount(previousDraft, nextDraft, changedField) {
+  const suggestedAmount = calculateAmount(nextDraft.quantity, nextDraft.rate);
+  const previousSuggestedAmount = calculateAmount(previousDraft.quantity, previousDraft.rate);
+  const normalizedCurrentAmount = String(previousDraft.amount ?? '').trim();
+
+  if (changedField !== 'amount' && suggestedAmount === null) {
+    return '';
+  }
+
+  const shouldAutoFill =
+    changedField !== 'amount' &&
+    (normalizedCurrentAmount === '' ||
+      (previousSuggestedAmount !== null && Number(normalizedCurrentAmount) === Number(previousSuggestedAmount)));
+
+  if (shouldAutoFill && suggestedAmount !== null) {
+    return String(suggestedAmount);
+  }
+
+  return nextDraft.amount;
+}
 
 function HomePage() {
   const currentDate = new Date();
@@ -91,9 +112,10 @@ function HomePage() {
       if (matchedSuggestion) {
         nextDraft.description = nextDraft.description || matchedSuggestion.description;
         nextDraft.rate = nextDraft.rate || String(matchedSuggestion.rate || '');
-        nextDraft.unit = nextDraft.unit || matchedSuggestion.unit || 'NO';
+        nextDraft.quantity = nextDraft.quantity || matchedSuggestion.quantity || '';
       }
     }
+    nextDraft.amount = getNextAmount(draftEntry, nextDraft, field);
     setDraftEntry(nextDraft);
   };
 
@@ -101,8 +123,8 @@ function HomePage() {
     event.preventDefault();
     const payload = {
       ...draftEntry,
-      quantity: Number(draftEntry.quantity || 0),
       rate: Number(draftEntry.rate || 0),
+      amount: draftEntry.amount === '' ? null : Number(draftEntry.amount || 0),
     };
     const result = await persistEntry(payload, 'Entry saved successfully.');
     if (!result.error) {

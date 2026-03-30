@@ -11,7 +11,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import { formatCurrency } from '../utils/quotationHelpers';
+import { formatCurrency, parseQuantityValue } from '../utils/quotationHelpers';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
@@ -33,7 +33,7 @@ function buildLineData(groupedEntries) {
 
 function buildBarData(entries) {
   const usageMap = entries.reduce((accumulator, entry) => {
-    accumulator[entry.equipment] = (accumulator[entry.equipment] || 0) + Number(entry.quantity || 0);
+    accumulator[entry.equipment] = (accumulator[entry.equipment] || 0) + Number(parseQuantityValue(entry.quantity) || 0);
     return accumulator;
   }, {});
 

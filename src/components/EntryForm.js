@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { QUOTATION_UNITS } from '../utils/constants';
-import { formatCurrency } from '../utils/quotationHelpers';
+import { calculateAmount, formatCurrency } from '../utils/quotationHelpers';
 
 function EntryForm({
   draftEntry,
@@ -14,7 +13,7 @@ function EntryForm({
   suggestions,
 }) {
   const amount = useMemo(
-    () => Number(draftEntry.quantity || 0) * Number(draftEntry.rate || 0),
+    () => calculateAmount(draftEntry.quantity, draftEntry.rate),
     [draftEntry.quantity, draftEntry.rate]
   );
 
@@ -75,18 +74,14 @@ function EntryForm({
               />
             </div>
             <div className="field field--compact">
-              <label htmlFor="entry-quantity">Quantity</label>
-              <input id="entry-quantity" type="number" min="0" step="0.01" value={draftEntry.quantity} onChange={(event) => onDraftChange('quantity', event.target.value)} required />
-            </div>
-            <div className="field field--compact">
-              <label htmlFor="entry-unit">Unit</label>
-              <select id="entry-unit" value={draftEntry.unit} onChange={(event) => onDraftChange('unit', event.target.value)}>
-                {QUOTATION_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
+              <label htmlFor="entry-quantity">Quantity / Unit</label>
+              <input
+                id="entry-quantity"
+                value={draftEntry.quantity}
+                onChange={(event) => onDraftChange('quantity', event.target.value)}
+                placeholder="25 MTR or LS"
+                required
+              />
             </div>
             <div className="field field--compact">
               <label htmlFor="entry-rate">Rate</label>
@@ -107,10 +102,23 @@ function EntryForm({
                 ))}
               </datalist>
             </div>
-            <div className="field field--full">
+            <div className="field field--compact">
+              <label htmlFor="entry-amount">Amount</label>
+              <input
+                id="entry-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={draftEntry.amount}
+                onChange={(event) => onDraftChange('amount', event.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+            <div className="field field--compact">
               <div className="amount-box">
-                <span>Auto-calculated amount</span>
-                <strong>{formatCurrency(amount)}</strong>
+                <span>{amount === null ? 'Manual amount required' : 'Suggested amount'}</span>
+                <strong>{amount === null ? 'Enter manually' : formatCurrency(amount)}</strong>
               </div>
             </div>
           </div>

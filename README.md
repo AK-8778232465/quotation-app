@@ -5,7 +5,7 @@ Mobile-first React single-page application for managing electrical work quotatio
 ## Features
 
 - Fast daily quotation entry form
-- Auto-calculated amount
+- Suggested amount with manual override
 - Equipment-based suggestions for rate and description
 - Copy previous day entries
 - Entries grouped by date with daily total and grand total
@@ -40,8 +40,8 @@ create table if not exists public.quotation_entries (
   ref_no text not null,
   equipment text not null,
   description text not null,
-  quantity numeric(12,2) not null default 0,
-  unit text not null,
+  quantity text not null,
+  unit text null default '',
   rate numeric(12,2) not null default 0,
   amount numeric(12,2) not null default 0,
   created_at timestamptz not null default now()
@@ -49,6 +49,15 @@ create table if not exists public.quotation_entries (
 
 create index if not exists quotation_entries_date_idx on public.quotation_entries (date desc);
 create index if not exists quotation_entries_equipment_idx on public.quotation_entries (equipment);
+```
+
+If you already have the old table in production, run this safe migration first:
+
+```sql
+alter table public.quotation_entries
+  alter column quantity type text using quantity::text,
+  alter column unit drop not null,
+  alter column unit set default '';
 ```
 
 Create `.env.local` from `.env.example`:

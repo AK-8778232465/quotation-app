@@ -1,5 +1,5 @@
 import { hasSupabaseConfig, supabase } from './supabase';
-import { calculateAmount, normalizeEntry, sortEntries } from '../utils/quotationHelpers';
+import { extractUnitFromQuantity, normalizeEntry, resolveAmount, sortEntries } from '../utils/quotationHelpers';
 
 const STORAGE_KEY = 'quotation_entries_v1';
 
@@ -53,7 +53,8 @@ async function insertLocalEntry(payload) {
   const entry = normalizeEntry({
     ...payload,
     id: payload.id || crypto.randomUUID(),
-    amount: calculateAmount(payload.quantity, payload.rate),
+    unit: payload.unit ?? extractUnitFromQuantity(payload.quantity),
+    amount: resolveAmount(payload),
     created_at: payload.created_at || new Date().toISOString(),
   });
 
@@ -129,7 +130,8 @@ export async function saveEntry(payload) {
 
   const normalizedPayload = normalizeEntry({
     ...payload,
-    amount: calculateAmount(payload.quantity, payload.rate),
+    unit: payload.unit ?? extractUnitFromQuantity(payload.quantity),
+    amount: resolveAmount(payload),
   });
 
   if (!hasSupabaseConfig) return insertLocalEntry(normalizedPayload);

@@ -22,6 +22,96 @@ function formatMoney(value) {
   return Number(value || 0).toFixed(2);
 }
 
+function sortPdfGroups(groupedEntries) {
+  return [...groupedEntries]
+    .sort((first, second) => first.date.localeCompare(second.date))
+    .map((group) => ({
+      ...group,
+      entries: [...group.entries].sort((first, second) => {
+        const equipmentComparison = first.equipment.localeCompare(second.equipment);
+        if (equipmentComparison !== 0) {
+          return equipmentComparison;
+        }
+
+        const refComparison = first.ref_no.localeCompare(second.ref_no);
+        if (refComparison !== 0) {
+          return refComparison;
+        }
+
+        return new Date(first.created_at).getTime() - new Date(second.created_at).getTime();
+      }),
+    }));
+}
+
+function buildPdfRows(groupedEntries) {
+  const sortedGroups = sortPdfGroups(groupedEntries);
+  const rows = [];
+  let serial = 1;
+
+  sortedGroups.forEach((group, groupIndex) => {
+    const equipmentCounts = group.entries.reduce((accumulator, entry) => {
+      const key = entry.equipment.trim().toLowerCase();
+      accumulator[key] = accumulator[key] || { count: 0 };
+      accumulator[key].count += 1;
+      return accumulator;
+    }, {});
+
+    const renderedEquipmentKeys = new Set();
+
+    group.entries.forEach((entry, entryIndex) => {
+      const equipmentKey = entry.equipment.trim().toLowerCase();
+      const isFirstEquipmentRow = !renderedEquipmentKeys.has(equipmentKey);
+      if (isFirstEquipmentRow) {
+        renderedEquipmentKeys.add(equipmentKey);
+      }
+
+      const row = [serial];
+
+      if (entryIndex === 0) {
+        row.push({
+          content: formatPdfDate(group.date),
+          rowSpan: group.entries.length,
+          styles: { valign: 'top' },
+        });
+      }
+
+      row.push(entry.ref_no);
+
+      if (isFirstEquipmentRow) {
+        row.push({
+          content: entry.equipment,
+          rowSpan: equipmentCounts[equipmentKey].count,
+          styles: { valign: 'middle' },
+        });
+      }
+
+      row.push(entry.description);
+      row.push(entry.quantity);
+      row.push(formatMoney(entry.rate));
+      row.push(formatMoney(entry.amount));
+
+      rows.push(row);
+      serial += 1;
+    });
+
+    if (groupIndex < sortedGroups.length - 1) {
+      rows.push([
+        {
+          content: '',
+          colSpan: 8,
+          styles: {
+            minCellHeight: 4,
+            lineWidth: 0,
+            fillColor: [255, 255, 255],
+          },
+        },
+      ]);
+    }
+  });
+
+  return rows;
+}
+
 function drawHeader(doc, groupedEntries) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const left = 14;
@@ -82,24 +172,7 @@ function drawFooter(doc) {
 
 export function generateQuotationPdf({ groupedEntries, grandTotal }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const rows = [];
-  let serial = 1;
-
-  groupedEntries.forEach((group) => {
-    group.entries.forEach((entry) => {
-      rows.push([
-        serial,
-        formatPdfDate(entry.date),
-        entry.ref_no,
-        entry.equipment,
-        entry.description,
-        `${entry.quantity} ${entry.unit}`,
-        formatMoney(entry.rate),
-        formatMoney(entry.amount),
-      ]);
-      serial += 1;
-    });
-  });
+  const rows = buildPdfRows(groupedEntries);
 
   autoTable(doc, {
     startY: 70,

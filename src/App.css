@@ -427,6 +427,18 @@ select:focus {
   font-weight: 700;
 }
 
+.table-helper-text {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.row-actions {
+  display: grid;
+  gap: 8px;
+}
+
 .mobile-cards {
   display: none;
 }
@@ -585,9 +597,6 @@ select:focus {
   }
 
   .session-pill {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    text-align: center;
+    display: none;
   }
 }
