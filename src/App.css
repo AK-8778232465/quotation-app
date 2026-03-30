@@ -364,6 +364,16 @@ select:focus {
   min-height: 44px;
 }
 
+.mobile-export-actions {
+  display: none;
+  width: 100%;
+  gap: 10px;
+}
+
+.mobile-export-actions .btn {
+  flex: 1 1 180px;
+}
+
 .date-group {
   margin-bottom: 20px;
   padding: 14px;
@@ -555,6 +565,11 @@ select:focus {
   .export-range-field {
     min-width: 0;
     width: 100%;
+  }
+
+  .mobile-export-actions {
+    display: flex;
+    flex-wrap: wrap;
   }
 
   .form-grid {

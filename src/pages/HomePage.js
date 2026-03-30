@@ -230,6 +230,14 @@ function HomePage() {
                 />
               </div>
             </div>
+            <div className="mobile-export-actions">
+              <button className="btn btn-secondary" onClick={handleGeneratePdf} disabled={isGeneratingPdf || !entries.length} type="button">
+                {isGeneratingPdf ? 'Preparing PDF...' : 'Generate PDF'}
+              </button>
+              <button className="btn btn-secondary" onClick={() => exportEntriesToExcel(entries)} disabled={!entries.length} type="button">
+                Export Excel
+              </button>
+            </div>
             <button className="btn btn-secondary desktop-only" onClick={handleGeneratePdf} disabled={isGeneratingPdf || !entries.length}>
               {isGeneratingPdf ? 'Preparing PDF...' : 'Generate PDF'}
             </button>
