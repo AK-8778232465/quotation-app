@@ -46,9 +46,9 @@ function sortPdfGroups(groupedEntries) {
 function buildPdfRows(groupedEntries) {
   const sortedGroups = sortPdfGroups(groupedEntries);
   const rows = [];
-  let serial = 1;
 
   sortedGroups.forEach((group, groupIndex) => {
+    const groupSerial = groupIndex + 1;
     const equipmentCounts = group.entries.reduce((accumulator, entry) => {
       const key = entry.equipment.trim().toLowerCase();
       accumulator[key] = accumulator[key] || { count: 0 };
@@ -65,33 +65,53 @@ function buildPdfRows(groupedEntries) {
         renderedEquipmentKeys.add(equipmentKey);
       }
 
-      const row = [serial];
-
       if (entryIndex === 0) {
-        row.push({
+        rows.push([
+          {
+            content: groupSerial,
+            rowSpan: group.entries.length,
+            styles: { valign: 'top' },
+          },
+          {
           content: formatPdfDate(group.date),
           rowSpan: group.entries.length,
           styles: { valign: 'top' },
-        });
+          },
+          entry.ref_no,
+          ...(isFirstEquipmentRow
+            ? [
+                {
+                  content: entry.equipment,
+                  rowSpan: equipmentCounts[equipmentKey].count,
+                  styles: { valign: 'middle' },
+                },
+              ]
+            : []),
+          entry.description,
+          entry.quantity,
+          formatMoney(entry.rate),
+          formatMoney(entry.amount),
+        ]);
+
+        return;
       }
 
-      row.push(entry.ref_no);
-
-      if (isFirstEquipmentRow) {
-        row.push({
-          content: entry.equipment,
-          rowSpan: equipmentCounts[equipmentKey].count,
-          styles: { valign: 'middle' },
-        });
-      }
-
-      row.push(entry.description);
-      row.push(entry.quantity);
-      row.push(formatMoney(entry.rate));
-      row.push(formatMoney(entry.amount));
-
-      rows.push(row);
-      serial += 1;
+      rows.push([
+        entry.ref_no,
+        ...(isFirstEquipmentRow
+          ? [
+              {
+                content: entry.equipment,
+                rowSpan: equipmentCounts[equipmentKey].count,
+                styles: { valign: 'middle' },
+              },
+            ]
+          : []),
+        entry.description,
+        entry.quantity,
+        formatMoney(entry.rate),
+        formatMoney(entry.amount),
+      ]);
     });
 
     if (groupIndex < sortedGroups.length - 1) {
