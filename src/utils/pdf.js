@@ -196,7 +196,7 @@ export function generateQuotationPdf({ groupedEntries, grandTotal }) {
 
   autoTable(doc, {
     startY: 70,
-    margin: { top: 70, left: 14, right: 14, bottom: 16 },
+    margin: { top: 16, left: 14, right: 14, bottom: 16 },
     head: [['SI No', 'DATE', 'Ref.No', 'Equipment Name', 'Description', 'Qty', 'Rate', 'Amount']],
     body: rows,
     theme: 'grid',
@@ -235,8 +235,11 @@ export function generateQuotationPdf({ groupedEntries, grandTotal }) {
       fontStyle: 'bold',
       halign: 'right',
     },
-    didDrawPage: () => {
-      drawHeader(doc, groupedEntries);
+    didDrawPage: (data) => {
+      if (data.pageNumber === 1) {
+        drawHeader(doc, groupedEntries);
+      }
+
       drawFooter(doc);
     },
   });
