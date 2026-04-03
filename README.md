@@ -73,6 +73,72 @@ REACT_APP_SUPABASE_URL=...
 REACT_APP_SUPABASE_ANON_KEY=...
 ```
 
+## Scheduled Vercel Blob Backup
+
+This project includes a Vercel serverless endpoint for daily JSON backups to Vercel Blob:
+
+- Function path: `api/backup-json.js`
+- Cron SQL template: `supabase/sql/setup_backup_cron.sql`
+- Backup file name pattern: `quotation-backup-YYYY-MM-DD.json`
+- Default retention: keep the latest 30 backup files
+
+### 1. Add Vercel environment variables
+
+Add these environment variables to your Vercel project:
+
+- `BLOB_READ_WRITE_TOKEN`
+- `BACKUP_INTERNAL_TOKEN`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Optional:
+
+- `BACKUP_RETENTION_COUNT=30`
+
+### 2. Deploy to Vercel
+
+Deploy the app to production after the environment variables are set. The backup endpoint will be available at:
+
+```text
+https://YOUR_VERCEL_PRODUCTION_URL/api/backup-json
+```
+
+### 3. Create the daily cron job in Supabase
+
+Open the Supabase SQL Editor, edit `YOUR_VERCEL_PRODUCTION_URL` inside `supabase/sql/setup_backup_cron.sql`, then run the SQL script.
+
+The included schedule is:
+
+```text
+30 20 * * *
+```
+
+That is `20:30 UTC` every day. Adjust it if you want a different backup time.
+
+### 5. Test manually before enabling cron
+
+```bash
+curl -X POST "https://YOUR_VERCEL_PRODUCTION_URL/api/backup-json" \
+  -H "Authorization: Bearer your-long-random-token" \
+  -H "Content-Type: application/json" \
+  -d "{\"source\":\"manual\"}"
+```
+
+Expected result:
+
+- a new private JSON file appears in Vercel Blob under `quotation-backups/`
+- the response includes `row_count` and `backup_pathname`
+- older files beyond the retention count are deleted after a successful upload
+
+### 6. Recovery
+
+Recovery stays intentionally simple:
+
+1. Download the required JSON backup from Vercel Blob or from your internal admin tooling.
+2. Use the existing JSON import action in the app.
+
+Manual JSON export/import from the app is still available as a second safety layer.
+
 ## Run Locally
 
 ```bash
