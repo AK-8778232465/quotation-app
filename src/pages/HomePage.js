@@ -148,7 +148,7 @@ function HomePage() {
     if (result.error) setMessage({ type: 'error', text: result.error });
     else {
       setEntries(result.data);
-      setMessage({ type: 'success', text: 'Entry deleted.' });
+      setMessage({ type: 'success', text: 'Entry archived safely.' });
     }
     setStorageSource(result.source || 'local');
     setIsSaving(false);

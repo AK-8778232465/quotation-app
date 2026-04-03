@@ -44,11 +44,13 @@ create table if not exists public.quotation_entries (
   unit text null default '',
   rate numeric(12,2) not null default 0,
   amount numeric(12,2) not null default 0,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz null
 );
 
 create index if not exists quotation_entries_date_idx on public.quotation_entries (date desc);
 create index if not exists quotation_entries_equipment_idx on public.quotation_entries (equipment);
+create index if not exists quotation_entries_deleted_at_idx on public.quotation_entries (deleted_at);
 ```
 
 If you already have the old table in production, run this safe migration first:
@@ -58,6 +60,11 @@ alter table public.quotation_entries
   alter column quantity type text using quantity::text,
   alter column unit drop not null,
   alter column unit set default '';
+
+alter table public.quotation_entries
+  add column if not exists deleted_at timestamptz null;
+
+create index if not exists quotation_entries_deleted_at_idx on public.quotation_entries (deleted_at);
 ```
 
 Create `.env.local` from `.env.example`:

@@ -53,7 +53,16 @@ export function normalizeEntry(entry) {
     rate: Number(entry.rate || 0),
     amount: resolveAmount(entry),
     created_at: entry.created_at || new Date().toISOString(),
+    deleted_at: entry.deleted_at || null,
   };
+}
+
+export function isEntryDeleted(entry) {
+  return Boolean(entry?.deleted_at);
+}
+
+export function getActiveEntries(entries) {
+  return entries.filter((entry) => !isEntryDeleted(entry));
 }
 
 export function sortEntries(entries) {

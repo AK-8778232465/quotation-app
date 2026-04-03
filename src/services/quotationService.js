@@ -1,5 +1,5 @@
 import { hasSupabaseConfig, supabase } from './supabase';
-import { extractUnitFromQuantity, normalizeEntry, resolveAmount, sortEntries } from '../utils/quotationHelpers';
+import { extractUnitFromQuantity, getActiveEntries, normalizeEntry, resolveAmount, sortEntries } from '../utils/quotationHelpers';
 
 const STORAGE_KEY = 'quotation_entries_v1';
 
@@ -22,19 +22,20 @@ function readLocalEntries() {
 
 function writeLocalEntries(entries) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  return withStorageMode(sortEntries(entries), 'local');
+  return withStorageMode(sortEntries(getActiveEntries(entries)), 'local');
 }
 
 async function fetchSupabaseEntries() {
   const { data, error } = await supabase
     .from('quotation_entries')
     .select('*')
+    .is('deleted_at', null)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (error) {
     return {
-      data: withStorageMode(readLocalEntries(), 'local'),
+      data: withStorageMode(sortEntries(getActiveEntries(readLocalEntries())), 'local'),
       error: 'Supabase fetch failed. Showing local backup data.',
       source: 'local',
     };
@@ -45,7 +46,7 @@ async function fetchSupabaseEntries() {
 
 export async function getEntries() {
   if (hasSupabaseConfig) return fetchSupabaseEntries();
-  return { data: withStorageMode(readLocalEntries(), 'local'), error: null, source: 'local' };
+  return { data: withStorageMode(sortEntries(getActiveEntries(readLocalEntries())), 'local'), error: null, source: 'local' };
 }
 
 async function insertLocalEntry(payload) {
@@ -66,7 +67,7 @@ async function insertLocalEntry(payload) {
 }
 
 async function copyPreviousDayLocal(targetDate) {
-  const localEntries = readLocalEntries();
+  const localEntries = getActiveEntries(readLocalEntries());
   const uniqueDates = [...new Set(localEntries.map((entry) => entry.date))].sort((a, b) => b.localeCompare(a));
   const sourceDate = uniqueDates.find((date) => date < targetDate);
 
@@ -132,6 +133,7 @@ export async function saveEntry(payload) {
     ...payload,
     unit: payload.unit ?? extractUnitFromQuantity(payload.quantity),
     amount: resolveAmount(payload),
+    deleted_at: payload.deleted_at ?? null,
   });
 
   if (!hasSupabaseConfig) return insertLocalEntry(normalizedPayload);
@@ -151,16 +153,24 @@ export async function saveEntry(payload) {
 
 export async function deleteEntry(entryId) {
   if (!hasSupabaseConfig) {
-    const nextEntries = readLocalEntries().filter((entry) => entry.id !== entryId);
+    const nextEntries = readLocalEntries().map((entry) =>
+      entry.id === entryId ? normalizeEntry({ ...entry, deleted_at: new Date().toISOString() }) : entry
+    );
     return { data: writeLocalEntries(nextEntries), error: null, source: 'local' };
   }
 
-  const { error } = await supabase.from('quotation_entries').delete().eq('id', entryId);
+  const { error } = await supabase
+    .from('quotation_entries')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', entryId)
+    .is('deleted_at', null);
   if (error) {
-    const nextEntries = readLocalEntries().filter((entry) => entry.id !== entryId);
+    const nextEntries = readLocalEntries().map((entry) =>
+      entry.id === entryId ? normalizeEntry({ ...entry, deleted_at: new Date().toISOString() }) : entry
+    );
     return {
       data: writeLocalEntries(nextEntries),
-      error: 'Supabase delete failed. Entry removed from local backup only.',
+      error: 'Supabase delete failed. Entry archived in local backup only.',
       source: 'local',
     };
   }
